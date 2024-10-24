@@ -4,7 +4,7 @@
  * Created Date: Wednesday October 23rd 2024
  * Author: Tony Wiedman
  * -----
- * Last Modified: Thu October 24th 2024 12:37:30 
+ * Last Modified: Thu October 24th 2024 12:50:47 
  * Modified By: Tony Wiedman
  * -----
  * Copyright (c) 2024 MolexWorks / Tone Web Design
@@ -131,13 +131,11 @@ function viewPayload(index)
 //! \param json The JSON object to render
 //! \param level The current level of the tree
 //! \returns The rendered tree as a DOM element
-function renderJsonTree(json, level = 0)
-{
+function renderJsonTree(json, level = 0) {
     const container = document.createElement('div');
     container.style.marginLeft = `${level * 20}px`;
 
-    Object.keys(json).forEach(key =>
-    {
+    Object.keys(json).forEach(key => {
         const value = json[key];
         const row = document.createElement('div');
         row.className = 'json-row';
@@ -151,26 +149,37 @@ function renderJsonTree(json, level = 0)
         const valueElement = document.createElement('span');
         valueElement.className = 'json-value';
 
-        if (typeof value === 'object' && value !== null)
-        {
-            valueElement.textContent = '{ }';
+        // If the value is an object, recurse to render the child keys
+        if (typeof value === 'object' && value !== null) {
+            valueElement.textContent = '{ }'; // Show as object for now
             row.appendChild(keyElement);
             row.appendChild(valueElement);
             container.appendChild(row);
             container.appendChild(renderJsonTree(value, level + 1));
-        } else if (key === 'thumb' && value.startsWith('http'))
-        {
-            //* render the thumbnail
-            const imgElement = document.createElement('img');
-            imgElement.src = value;
-            imgElement.alt = 'Thumbnail';
-            imgElement.style.maxWidth = '150px';
-            row.appendChild(keyElement);
-            row.appendChild(imgElement);
+        } 
+        // Handle thumbnail case (if it's a URL or blob)
+        else if (key === 'thumb') {
+            if (typeof value === 'string' && value.startsWith('http')) {
+                //* Render the image if it's a valid URL
+                const imgElement = document.createElement('img');
+                imgElement.src = value;
+                imgElement.alt = 'Thumbnail';
+                imgElement.style.maxWidth = '150px';
+                row.appendChild(keyElement);
+                row.appendChild(imgElement);
+            } else if (value instanceof Blob) {
+                //* Handle blob data by converting it to an object URL
+                const imgElement = document.createElement('img');
+                const objectURL = URL.createObjectURL(value);
+                imgElement.src = objectURL;
+                imgElement.alt = 'Thumbnail';
+                imgElement.style.maxWidth = '150px';
+                row.appendChild(keyElement);
+                row.appendChild(imgElement);
+            }
             container.appendChild(row);
-        } else
-        {
-            //* primitive value, display directly
+        }
+        else {
             valueElement.textContent = value;
             row.appendChild(keyElement);
             row.appendChild(valueElement);
