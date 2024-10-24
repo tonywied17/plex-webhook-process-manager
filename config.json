@@ -1,0 +1,18 @@
+{
+    "SCRIPT_PATHS": {
+        "Kometa": "C:\\Users\\tonyw\\Kometa\\kometa.py"
+    },
+    "PORT": "5000",
+    "LIBRARY_NEW_PARAM": "--collections-only",
+    "RUN_FLAG": "--run",
+    "QUEUE_DELAY_MS": "900000",
+    "LOG_COLORS": {
+        "SUCCESS": "\u001b[32m",
+        "ERROR": "\u001b[31m",
+        "INFO": "\u001b[34m",
+        "WARN": "\u001b[33m",
+        "EVENT": "\u001b[35m",
+        "DEBUG": "\u001b[37m",
+        "RESET": "\u001b[0m"
+    }
+}

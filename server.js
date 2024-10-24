@@ -4,7 +4,7 @@
  * Created Date: Monday October 21st 2024
  * Author: Tony Wiedman
  * -----
- * Last Modified: Wed October 23rd 2024 8:00:19 
+ * Last Modified: Thu October 24th 2024 12:39:10 
  * Modified By: Tony Wiedman
  * -----
  * Copyright (c) 2024 MolexWorks / Tone Web Design
@@ -12,30 +12,32 @@
 
 const express = require('express');
 const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const app = express();
 
-//@ Configuration ----
-const SCRIPT_PATHS = {
-    'Kometa': 'C:\\Users\\tonyw\\Kometa\\kometa.py',
-};
-const PORT = 5000;
-const SUCCESS = '\x1b[32m';
-const ERROR = '\x1b[31m';
-const INFO = '\x1b[34m';
-const WARN = '\x1b[33m';
-const EVENT = '\x1b[35m';
-const DEBUG = '\x1b[37m';
-const RESET = '\x1b[0m';
-const LIBRARY_NEW_PARAM = '--collections-only';
-const RUN_FLAG = '--run';
-const QUEUE_DELAY_MS = 30 * 60 * 1000; //* 30 minutes
+
+
+//@ Load the configuration from config.json ----
+
+const configPath = path.join(__dirname, 'config.json');
+let config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+let { SCRIPT_PATHS, PORT, LIBRARY_NEW_PARAM, RUN_FLAG, QUEUE_DELAY_MS, LOG_COLORS } = config;
+let { SUCCESS, ERROR, INFO, WARN, EVENT, DEBUG, RESET } = LOG_COLORS;
+
+
 
 //@ State variables ----
+
 let isProcessing = false;
 let processQueue = [];
 let currentProcessParams = '';
 let lastProcessTime = 0;
 let currentProcessOutput = '';
 
+
+
+//@ Helper Functions ----
 
 //! Run a process with the given parameters and type
 //! \param processType: A string representing the type of process (e.g., 'Kometa', 'OtherProcess')
@@ -80,7 +82,7 @@ function RunProcess(processType, params = [])
         {
             if (code === 0)
             {
-                LogMessage(`${processType} Process Finished Successfully`, SUCCESS);
+                LogMessage(`[DONE] ${processType} Process Finished Successfully`, SUCCESS);
                 resolve();
             } else
             {
@@ -179,8 +181,6 @@ function LogMessage(message, color = RESET, payload = null)
 
 //@ Route Handlers  ----
 
-const path = require('path');
-const app = express();
 let logMessages = [];
 
 //! Route to serve the index.html file
@@ -209,6 +209,33 @@ app.get('/process-status', (req, res) =>
 
 app.use(express.static('public'));
 
+//! Route to fetch config.json
+app.get('/config', (req, res) =>
+{
+    const updatedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    res.json(updatedConfig);
+});
+
+//! Route to update config.json
+app.post('/config', express.json(), (req, res) =>
+{
+    try
+    {
+        const newConfig = req.body;
+        fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 4));
+
+        //* reload the updated config into memory
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        ({ SCRIPT_PATHS, PORT, LIBRARY_NEW_PARAM, RUN_FLAG, QUEUE_DELAY_MS, LOG_COLORS } = config);
+        ({ SUCCESS, ERROR, INFO, WARN, EVENT, DEBUG, RESET } = LOG_COLORS);
+
+        res.status(200).json({ message: 'Configuration updated successfully' });
+    } catch (error)
+    {
+        console.error('Error updating config:', error);
+        res.status(500).json({ message: 'Failed to update configuration', error: error.toString() });
+    }
+});
 
 //! Webhook Route
 app.post('/webhook', (req, res) =>
@@ -267,7 +294,6 @@ app.post('/webhook', (req, res) =>
         }
     });
 });
-
 
 //! Start the server
 app.listen(PORT, () =>

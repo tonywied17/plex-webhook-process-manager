@@ -35,21 +35,51 @@
 
     <!-- Payload Modal -->
     <div id="payload-modal">
-        <div class="modal-content">
-            <h4>Payload</h4>
-            <pre id="payload-content"></pre>
-            <button onclick="closePayloadModal()">Close</button>
+        <div class="modal-wrapper">
+            <div class="modal-header">
+                <h4>Payload</h4>
+                <button class="close-btn" onclick="closePayloadModal()">Close</button>
+            </div>
+            <div class="modal-content">
+                <div id="payload-content-tree"></div>
+            </div>
         </div>
     </div>
 
     <!-- Process Status Modal -->
     <div id="process-modal">
-        <div class="modal-content">
-            <h4>Process Status</h4>
-            <pre id="process-content">Loading...</pre>
-            <button onclick="closeProcessModal()">Close</button>
+        <div class="modal-wrapper">
+            <div class="modal-header">
+                <h4>Process Status</h4>
+                <button class="close-btn" onclick="closeProcessModal()">Close</button>
+            </div>
+            <div class="modal-content">
+                <pre id="process-content">Loading...</pre>
+            </div>
         </div>
     </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal">
+        <div class="modal-wrapper">
+            <div class="modal-header">
+                <h4>Edit Settings</h4>
+                <div>
+                    <button class="save-btn" onclick="saveSettings()">Save</button> 
+                    <button class="close-btn" onclick="closeSettingsModal()">Close</button>
+                </div>
+                
+            </div>
+            <div class="modal-content">
+                <form id="settings-form">
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <button onclick="openSettingsModal()" style="margin-bottom: 1em;">Edit Settings</button>
+
+
 </body>
 
 </html>
