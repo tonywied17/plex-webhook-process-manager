@@ -4,7 +4,7 @@
  * Created Date: Monday October 21st 2024
  * Author: Tony Wiedman
  * -----
- * Last Modified: Wed October 23rd 2024 4:52:53 
+ * Last Modified: Wed October 23rd 2024 8:00:19 
  * Modified By: Tony Wiedman
  * -----
  * Copyright (c) 2024 MolexWorks / Tone Web Design
@@ -22,10 +22,12 @@ const SUCCESS = '\x1b[32m';
 const ERROR = '\x1b[31m';
 const INFO = '\x1b[34m';
 const WARN = '\x1b[33m';
+const EVENT = '\x1b[35m';
+const DEBUG = '\x1b[37m';
 const RESET = '\x1b[0m';
 const LIBRARY_NEW_PARAM = '--collections-only';
 const RUN_FLAG = '--run';
-const QUEUE_DELAY_MS = 30 * 60 * 1000; // 30 minutes
+const QUEUE_DELAY_MS = 30 * 60 * 1000; //* 30 minutes
 
 //@ State variables ----
 let isProcessing = false;
@@ -54,7 +56,7 @@ function RunProcess(processType, params = [])
 
         const processParams = params.join(' ');
 
-        LogMessage(`Running ${processType} process with params: ${processParams}`, INFO);
+        LogMessage(`[RUN] Process: ${processType}, Params: ${processParams}`, INFO);
 
         const process = spawn('python', [scriptPath, ...params], {
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -62,7 +64,7 @@ function RunProcess(processType, params = [])
             shell: true
         });
 
-        currentProcessOutput = ''; 
+        currentProcessOutput = '';
 
         process.stdout.on('data', (data) =>
         {
@@ -96,7 +98,7 @@ function ProcessNextInQueue()
 {
     if (processQueue.length > 0)
     {
-        const nextProcess = processQueue[0]; // Keep the current task in the queue
+        const nextProcess = processQueue[0]; //* keep the current task in the queue!
         const { processType, params } = nextProcess;
         currentProcessParams = params.join(' ');
 
@@ -104,7 +106,7 @@ function ProcessNextInQueue()
             .then(() =>
             {
                 currentProcessParams = '';
-                processQueue.shift(); // Remove only after completion
+                processQueue.shift(); //* remove only after completion
                 ProcessNextInQueue();
             })
             .catch(err =>
@@ -159,13 +161,20 @@ function ExtractPayload(data, headers)
     return payload;
 }
 
-//! Log a message with color formatting
+//! Log a message with color formatting in the console and pass a clean label to logMessages
 function LogMessage(message, color = RESET, payload = null)
 {
-    console.log(`${color}${message}${RESET}`);
-    logMessages.push({ message, payload });
-}
+    let logType;
+    if (color === INFO) logType = 'INFO';
+    else if (color === SUCCESS) logType = 'SUCCESS';
+    else if (color === WARN) logType = 'WARN';
+    else if (color === EVENT) logType = 'EVENT';
+    else if (color === DEBUG) logType = 'DEBUG';
+    else logType = 'ERROR';
 
+    console.log(`${color}${message}${RESET}`);
+    logMessages.push({ message, payload, logType });
+}
 
 
 //@ Route Handlers  ----
@@ -215,7 +224,7 @@ app.post('/webhook', (req, res) =>
             const payload = ExtractPayload(data, req.headers);
             const event = payload.payload?.event || (payload.Metadata && payload.Metadata.event);
 
-            LogMessage(`Received event: ${event}`, WARN, payload); 
+            LogMessage(`[EVENT] ${event}`, EVENT, payload);
 
             if (event === 'library.new')
             {
@@ -228,7 +237,7 @@ app.post('/webhook', (req, res) =>
                     const processType = 'Kometa';
                     const scriptPath = SCRIPT_PATHS[processType];
 
-                    LogMessage(`+ Queueing ${processType} Collections Process`, WARN);
+                    LogMessage(`[QUEUE] Process: ${processType}, Params: ${newProcessParams}`, INFO);
 
                     //* Push the process to the queue
                     processQueue.push({ processType, scriptPath, params: newProcessParams });
@@ -244,7 +253,7 @@ app.post('/webhook', (req, res) =>
                 } else
                 {
                     const timeLeft = QUEUE_DELAY_MS - (currentTime - lastProcessTime);
-                    LogMessage(`Queue delay not met. Wait for ${Math.ceil(timeLeft / 1000)} more seconds`, WARN);
+                    LogMessage(`[WAIT] Queue delay not met. Wait for ${Math.ceil(timeLeft / 1000)} more seconds`, ERROR);
                     return res.status(429).send('Queue delay not met. Please try again later.');
                 }
             } else
@@ -263,5 +272,5 @@ app.post('/webhook', (req, res) =>
 //! Start the server
 app.listen(PORT, () =>
 {
-    LogMessage(`Server is running on http://localhost:${PORT}`, INFO);
+    LogMessage(`Server is running on http://localhost:${PORT}`, DEBUG);
 });

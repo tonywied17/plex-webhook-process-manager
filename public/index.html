@@ -7,185 +7,31 @@
     <title>Plex Webhook Debug</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Noto+Sans&display=swap"
         rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', 'Noto Sans', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #121212;
-            color: #e0e0e0;
-        }
-
-        h1,
-        h3 {
-            color: #ffffff;
-            text-transform: uppercase;
-        }
-
-        h1 {
-            margin-bottom: 10px;
-        }
-
-        select,
-        button {
-            background-color: #1e1e1e;
-            color: #ffffff;
-            border: 1px solid #333;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #333;
-            transition: background-color 0.3s ease;
-        }
-
-        #queue {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .queue-card {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            width: 300px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .queue-card h4 {
-            margin: 0 0 10px;
-            color: #ffffff;
-        }
-
-        .queue-card p {
-            margin: 5px 0;
-            color: #b3b3b3;
-            font-size: 0.9rem;
-        }
-
-        #log {
-            background-color: #1e1e1e;
-            padding: 15px;
-            margin-top: 15px;
-            border: 1px solid #333;
-            border-radius: 5px;
-            height: 200px;
-            overflow-y: auto;
-        }
-
-        .log-entry {
-            margin-bottom: 10px;
-            padding: 5px;
-            border-bottom: 1px solid #333;
-        }
-
-        .log-entry button {
-            margin-left: 10px;
-            background-color: #00796b;
-            border: none;
-            transition: background-color 0.3s ease;
-        }
-
-        .log-entry button:hover {
-            background-color: #004d40;
-        }
-
-        /* Modals */
-        #payload-modal,
-        #process-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-
-        #payload-modal.active,
-        #process-modal.active {
-            display: flex;
-            opacity: 1;
-        }
-
-        .modal-content {
-            background-color: #2c2c2c;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 800px;
-            width: 100%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.4s ease;
-        }
-
-        .modal-content h4 {
-            color: #ffffff;
-            margin-top: 0;
-        }
-
-        .modal-content pre {
-            background-color: #1e1e1e;
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 5px;
-            max-height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            color: #ffffff;
-        }
-
-        .modal-content button {
-            margin-top: 15px;
-            background-color: #d32f2f;
-        }
-
-        .modal-content button:hover {
-            background-color: #9a0007;
-        }
-
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/script.js" defer></script>
 </head>
 
 <body>
-    <h1>Plex Webhook Debug</h1>
+    <h1>Plex Webhook Manager</h1>
 
     <h3>Send Event</h3>
-    <label for="eventType">Event Type:</label>
-    <select id="eventType">
-        <option value="library.new">library.new</option>
-        <option value="other.event">other.event</option>
-    </select>
-    <br><br>
-    <button onclick="sendEvent()">Send Event</button>
+    <div class="event-container">
+        <select id="eventType">
+            <option value="library.new">library.new</option>
+            <option value="other.event">other.event</option>
+        </select>
+        <button onclick="sendEvent()">Send Event</button>
+    </div>
 
     <h3>Process Queue</h3>
     <div id="queue">No items in queue</div>
 
     <h3>Log Messages</h3>
-    <div id="log">No log messages yet</div>
+    <div id="log">
+        <div class="log-entry log-DEBUG">
+            No log messages yet
+        </div>
+    </div>
 
     <!-- Payload Modal -->
     <div id="payload-modal">
@@ -204,160 +50,6 @@
             <button onclick="closeProcessModal()">Close</button>
         </div>
     </div>
-
-    <script>
-        let lastProcessStatus = '';
-
-        //! Send an event to the server
-        function sendEvent()
-        {
-            const eventType = document.getElementById('eventType').value;
-            const formData = new FormData();
-            formData.append('payload', JSON.stringify({ event: eventType }));
-
-            fetch('/webhook', {
-                method: 'POST',
-                body: formData
-            }).then(response => response.text())
-                .then(data =>
-                {
-                    alert(`Response: ${data}`);
-                }).catch(error =>
-                {
-                    alert(`Error: ${error.message}`);
-                });
-        }
-
-        //! Fetch the queue from the server
-        function fetchQueue()
-        {
-            fetch('/queue')
-                .then(response => response.json())
-                .then(data =>
-                {
-                    const queueDiv = document.getElementById('queue');
-                    queueDiv.innerHTML = ''; // Clear previous queue
-
-                    data.queue.forEach((item) =>
-                    {
-                        const card = document.createElement('div');
-                        card.className = 'queue-card';
-                        card.innerHTML = `
-                        <h4>${item.processType} Process</h4>
-                        <p><strong>Script Path:</strong> ${item.scriptPath}</p>
-                        <p><strong>Params:</strong> ${item.params.join(' ')}</p>
-                        <button onclick="openProcessModal()">View Status</button>
-                    `;
-                        queueDiv.appendChild(card);
-                    });
-                });
-        }
-
-        //! Fetch the logs from the server
-        function fetchLogs()
-        {
-            fetch('/logs')
-                .then(response => response.json())
-                .then(data =>
-                {
-                    const logDiv = document.getElementById('log');
-                    logDiv.innerHTML = ''; // Clear previous logs
-
-                    data.logs.forEach((log, index) =>
-                    {
-                        const logEntry = document.createElement('div');
-                        logEntry.className = 'log-entry';
-                        logEntry.innerHTML = `
-                        <strong>${log.message}</strong>
-                        ${log.payload ? `<button onclick="viewPayload(${index})">View Payload</button>` : ''}
-                    `;
-                        logDiv.appendChild(logEntry);
-                    });
-
-                    logDiv.scrollTop = logDiv.scrollHeight;
-                });
-        }
-
-        //! View the payload in a modal
-        function viewPayload(index)
-        {
-            fetch('/logs')
-                .then(response => response.json())
-                .then(data =>
-                {
-                    const payloadModal = document.getElementById('payload-modal');
-                    const payloadContent = document.getElementById('payload-content');
-                    payloadContent.textContent = JSON.stringify(data.logs[index].payload, null, 2);
-                    payloadModal.classList.add('active');
-                });
-        }
-
-        //! Open the process status modal and start polling for updates
-        function openProcessModal()
-        {
-            const processModal = document.getElementById('process-modal');
-            processModal.classList.add('active');
-
-            const intervalId = setInterval(() =>
-            {
-                fetchProcessStatus();
-
-                const processContent = document.getElementById('process-content');
-                processContent.scrollTop = processContent.scrollHeight;
-            }, 2000);
-
-            // store the interval ID for clearing when modal is closed
-            processModal.dataset.intervalId = intervalId;
-        }
-
-        //! Fetch the process status from the server
-        function fetchProcessStatus()
-        {
-            fetch('/process-status')
-                .then(response => response.text())
-                .then(data =>
-                {
-                    const processContent = document.getElementById('process-content');
-
-                    // check if there's any new output since the last fetch
-                    if (data !== lastProcessStatus)
-                    {
-                        const newContent = data.replace(lastProcessStatus, ''); // get only new content
-                        const textNode = document.createTextNode(newContent);
-                        processContent.appendChild(textNode);
-
-                        // update to the latest content
-                        lastProcessStatus = data;
-
-                        processContent.scrollTop = processContent.scrollHeight;
-                    }
-                });
-        }
-
-        //! Close the process status modal
-        function closeProcessModal()
-        {
-            const processModal = document.getElementById('process-modal');
-            processModal.classList.remove('active');
-
-            clearInterval(processModal.dataset.intervalId); // clear the interval
-            lastProcessStatus = ''; // reset the last process status
-        }
-
-        //! Close the payload modal
-        function closePayloadModal()
-        {
-            const payloadModal = document.getElementById('payload-modal');
-            payloadModal.classList.remove('active');
-        }
-
-        //! Fetch the queue and logs every 5 seconds
-        setInterval(() =>
-        {
-            fetchQueue();
-            fetchLogs();
-        }, 5000);
-    </script>
 </body>
 
 </html>
